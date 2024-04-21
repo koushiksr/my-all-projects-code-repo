@@ -1,0 +1,22 @@
+<body>
+  <div class="login-container">
+    <!-- <h2>Login</h2> -->
+    <form (ngSubmit)="login()" #loginForm="ngForm">
+      <div class="form-group">
+        <input type="email" id="email" placeholder="Email address" name="email" class="form-control" ngModel required>
+      </div>
+      <div class="form-group">
+        <input type="password" placeholder="Password" id="password" name="password" class="form-control" ngModel
+          required>
+      </div>
+      <button type="submit" class="btn btn-primary">Login</button>
+      <hr>
+      <div class="forgot-password">
+        <a href="/forgot-password">Forgot Password?</a>
+      </div>
+    </form>
+    <div *ngIf="loginError" style="color: red;
+    margin-top: 12px;
+    font-weight: 500;" class="alert alert-danger mt-3">{{ loginError }}</div>
+  </div>
+</body>

@@ -1,0 +1,75 @@
+# %pip install -U --quiet langchain-google-genai langchain faiss-cpu pypdf sentence-transformers
+
+
+
+
+
+# langchain_google_genai==1.0.1
+# langchain_community==0.0.31
+# sentence-transformers==2.6.1
+# langchain==0.1.14
+# transformers==4.39.3
+# faiss-cpu==1.8.0
+
+
+
+
+# pip install -U langchain langchain-google-genai faiss-cpu pypdf sentence-transformers flask
+#AIzaSyDbqUJwrU4txlAWOKr9QN_-dqLgtpB1VUQ
+
+
+
+
+
+
+
+
+
+
+from flask import Flask, request, jsonify
+import os
+from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_community.vectorstores import FAISS
+
+app = Flask(__name__)
+
+# Set your Google API key
+os.environ["GOOGLE_API_KEY"] = ""
+
+@app.route('/', methods=['POST', 'GET'])
+def process_pdf_and_query():
+    # Load and split the PDF document
+    pdf_file_path = "in.pdf"
+    loader = PyPDFLoader(pdf_file_path)
+    pages = loader.load_and_split()
+
+    # Embed the document pages
+    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+
+    # Create a FAISS database from the embedded pages
+    db = FAISS.from_documents(pages, embeddings)
+
+    # Get the query parameter from the URL if available
+    query = request.args.get('query', '')
+    if not query:
+        return jsonify({"error": "Query parameter is missing."})
+
+    # Perform similarity search based on the query
+    docs = db.similarity_search(query)
+    content = "\n".join([x.page_content for x in docs])
+
+    # Prepare input text for the generative AI
+    qa_prompt = "Use the following pieces of context to answer the user's question. If you don't know the answer, just say that you don't know, don't try to make up an answer.----------------"
+    input_text = qa_prompt + "\nContext:" + content + "\nUser question:\n" + query
+
+    # Invoke the generative AI to generate the response
+    llm = ChatGoogleGenerativeAI(model="gemini-pro")
+    result = llm.invoke(input_text)
+
+    # Return the generated response
+    return jsonify({"response": result.content})
+
+if __name__ == '__main__':
+    app.run(debug=True, port=8000)
